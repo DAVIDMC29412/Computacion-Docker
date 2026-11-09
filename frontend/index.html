@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuspensionPro · Inventario de repuestos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0d0f12;
+      --panel:#15181d;
+      --panel-2:#1b1f26;
+      --line:#262b33;
+      --line-2:#323843;
+      --text:#e9ecf1;
+      --muted:#8a93a3;
+      --accent:#ffb400;
+      --accent-2:#ff7a00;
+      --ok:#3ddc97;
+      --warn:#ffcc4d;
+      --danger:#ff4d5e;
+      --radius:14px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{background:var(--bg);color:var(--text);font-family:"Barlow",system-ui,sans-serif;font-size:15px}
+    body{
+      min-height:100vh;
+      background:
+        radial-gradient(1200px 500px at 85% -10%, rgba(255,180,0,.10), transparent 60%),
+        radial-gradient(800px 400px at -10% 10%, rgba(255,122,0,.06), transparent 60%),
+        var(--bg);
+    }
+    button,input,select{font:inherit;color:inherit}
+    .wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+
+    /* ---------- Header ---------- */
+    header{
+      border-bottom:1px solid var(--line);
+      background:rgba(13,15,18,.75);
+      backdrop-filter:blur(10px);
+      position:sticky;top:0;z-index:20;
+    }
+    .nav{display:flex;align-items:center;justify-content:space-between;height:68px}
+    .brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text)}
+    .brand svg{width:34px;height:34px}
+    .brand b{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:24px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
+    .brand b span{color:var(--accent)}
+    .api-pill{
+      display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);
+      border:1px solid var(--line);padding:6px 12px;border-radius:99px;
+    }
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+    .dot.on{background:var(--ok);box-shadow:0 0 0 4px rgba(61,220,151,.15)}
+    .dot.off{background:var(--danger);box-shadow:0 0 0 4px rgba(255,77,94,.15)}
+    .api-pill a{color:var(--accent);text-decoration:none;margin-left:6px}
+
+    /* ---------- Hero ---------- */
+    .hero{display:grid;grid-template-columns:1.3fr 1fr;gap:32px;align-items:center;padding:56px 0 36px}
+    .eyebrow{
+      font-family:"JetBrains Mono";font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);
+      display:inline-flex;gap:10px;align-items:center;
+    }
+    .eyebrow::before{content:"";width:28px;height:2px;background:var(--accent)}
+    h1{
+      font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:800;text-transform:uppercase;
+      font-size:clamp(42px,6vw,76px);line-height:.92;margin:16px 0 18px;letter-spacing:.5px;
+    }
+    h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+    .hero p{color:var(--muted);font-size:17px;max-width:520px;line-height:1.55}
+    .hero-actions{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+    .hero-art{position:relative;display:flex;justify-content:center}
+    .hero-art svg{width:100%;max-width:360px;filter:drop-shadow(0 30px 60px rgba(255,140,0,.18))}
+    .spring{animation:bounce 2.6s ease-in-out infinite;transform-origin:center 60%}
+    @keyframes bounce{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.9)}}
+
+    /* ---------- Buttons ---------- */
+    .btn{
+      display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-2);background:var(--panel-2);
+      padding:11px 18px;border-radius:10px;cursor:pointer;font-weight:600;transition:.18s;color:var(--text);text-decoration:none;
+    }
+    .btn:hover{border-color:var(--muted);transform:translateY(-1px)}
+    .btn svg{width:18px;height:18px}
+    .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#111;border:none}
+    .btn-primary:hover{box-shadow:0 10px 30px rgba(255,150,0,.35)}
+    .btn-danger{background:var(--danger);border-color:var(--danger);color:#fff}
+    .icon-btn{
+      width:36px;height:36px;display:grid;place-items:center;border-radius:9px;border:1px solid var(--line);
+      background:transparent;cursor:pointer;color:var(--muted);transition:.15s;
+    }
+    .icon-btn svg{width:17px;height:17px}
+    .icon-btn:hover{color:var(--text);border-color:var(--line-2);background:var(--panel-2)}
+    .icon-btn.del:hover{color:var(--danger);border-color:rgba(255,77,94,.5)}
+
+    /* ---------- Stats ---------- */
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+    .stat{
+      background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;
+    }
+    .stat::after{
+      content:"";position:absolute;right:-30px;top:-30px;width:100px;height:100px;border-radius:50%;
+      background:radial-gradient(circle,rgba(255,180,0,.12),transparent 70%);
+    }
+    .stat small{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.2px;font-weight:600}
+    .stat strong{display:block;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:38px;font-weight:700;margin-top:6px;line-height:1}
+    .stat .warn{color:var(--warn)}
+
+    /* ---------- Toolbar ---------- */
+    .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+    .search{flex:1;min-width:240px;position:relative}
+    .search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted)}
+    .field, .search input, select{
+      width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px;outline:none;transition:.15s;
+    }
+    .field:focus,.search input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,180,0,.15)}
+    select{appearance:none;cursor:pointer;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a93a3' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+    .search input{padding-left:42px}
+    .toolbar select{width:200px}
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+    .chip{
+      border:1px solid var(--line);background:transparent;padding:6px 14px;border-radius:99px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:600;transition:.15s;
+    }
+    .chip:hover{color:var(--text)}
+    .chip.active{background:rgba(255,180,0,.12);color:var(--accent);border-color:rgba(255,180,0,.45)}
+
+    /* ---------- Table ---------- */
+    .table-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:60px}
+    table{width:100%;border-collapse:collapse}
+    thead th{
+      text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted);font-weight:600;
+      padding:14px 18px;background:var(--panel-2);border-bottom:1px solid var(--line);
+    }
+    tbody td{padding:14px 18px;border-bottom:1px solid var(--line);vertical-align:middle}
+    tbody tr{transition:background .15s;animation:fadeIn .3s ease both}
+    tbody tr:hover{background:rgba(255,255,255,.02)}
+    tbody tr:last-child td{border-bottom:none}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+    .prod{display:flex;gap:12px;align-items:center}
+    .prod-icon{
+      width:42px;height:42px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;
+      background:linear-gradient(135deg,rgba(255,180,0,.18),rgba(255,122,0,.08));border:1px solid rgba(255,180,0,.25);color:var(--accent);
+    }
+    .prod-icon svg{width:22px;height:22px}
+    .prod b{display:block;font-weight:600}
+    .prod small{color:var(--muted);font-family:"JetBrains Mono";font-size:11.5px}
+    .tag{display:inline-block;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;background:var(--panel-2);border:1px solid var(--line-2)}
+    .pos{color:var(--muted);font-size:13px}
+    .price{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:19px;font-weight:700}
+    .stock{display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:13px}
+    .stock i{width:8px;height:8px;border-radius:50%}
+    .s-ok i{background:var(--ok)} .s-low i{background:var(--warn)} .s-out i{background:var(--danger)}
+    .s-out{color:var(--danger)}
+    .actions{display:flex;gap:6px;justify-content:flex-end}
+    .empty{padding:70px 20px;text-align:center;color:var(--muted)}
+    .empty svg{width:56px;height:56px;color:var(--line-2);margin-bottom:14px}
+    .empty h3{color:var(--text);font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:24px;text-transform:uppercase;margin-bottom:6px}
+    .skeleton td div{height:14px;border-radius:6px;background:linear-gradient(90deg,var(--panel-2),var(--line),var(--panel-2));background-size:200% 100%;animation:shimmer 1.2s infinite}
+    @keyframes shimmer{to{background-position:-200% 0}}
+
+    /* ---------- Modal ---------- */
+    .backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;
+      align-items:center;justify-content:center;z-index:50;padding:20px;
+    }
+    .backdrop.open{display:flex;animation:fade .2s}
+    @keyframes fade{from{opacity:0}}
+    .modal{
+      width:100%;max-width:620px;background:var(--panel);border:1px solid var(--line-2);border-radius:18px;
+      box-shadow:0 40px 80px rgba(0,0,0,.5);animation:pop .22s cubic-bezier(.2,.9,.3,1.2);max-height:92vh;overflow:auto;
+    }
+    .modal.sm{max-width:420px}
+    @keyframes pop{from{transform:scale(.94) translateY(10px);opacity:0}}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--line)}
+    .modal-head h2{font-family:"Barlow Condensed","Arial Narrow",sans-serif;text-transform:uppercase;font-size:26px;letter-spacing:.5px}
+    .modal-body{padding:22px 24px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .full{grid-column:1/-1}
+    label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600;margin-bottom:7px}
+    .modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:18px 24px;border-top:1px solid var(--line);background:var(--panel-2)}
+    .confirm-body{padding:28px 24px;text-align:center}
+    .confirm-body .big{width:60px;height:60px;border-radius:50%;margin:0 auto 16px;display:grid;place-items:center;background:rgba(255,77,94,.12);color:var(--danger)}
+    .confirm-body .big svg{width:28px;height:28px}
+    .confirm-body h3{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:24px;text-transform:uppercase;margin-bottom:8px}
+    .confirm-body p{color:var(--muted);line-height:1.5}
+
+    /* ---------- Detalle ---------- */
+    .detail{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .detail div{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+    .detail small{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+    .detail b{font-weight:600}
+
+    /* ---------- Toast ---------- */
+    #toasts{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:10px;z-index:80}
+    .toast{
+      display:flex;gap:10px;align-items:center;background:var(--panel-2);border:1px solid var(--line-2);border-left:4px solid var(--ok);
+      padding:13px 18px;border-radius:10px;box-shadow:0 20px 40px rgba(0,0,0,.4);animation:slide .25s ease;min-width:260px;
+    }
+    .toast.err{border-left-color:var(--danger)}
+    @keyframes slide{from{transform:translateX(30px);opacity:0}}
+
+    footer{border-top:1px solid var(--line);padding:24px 0;color:var(--muted);font-size:13px;text-align:center}
+
+    /* ---------- Responsive ---------- */
+    @media (max-width:900px){
+      .hero{grid-template-columns:1fr;padding-top:36px}
+      .hero-art{display:none}
+      .stats{grid-template-columns:repeat(2,1fr)}
+      thead{display:none}
+      tbody tr{display:grid;grid-template-columns:1fr auto;gap:10px;padding:16px;border-bottom:1px solid var(--line)}
+      tbody td{padding:0;border:none}
+      tbody td.c-tipo,tbody td.c-pos,tbody td.c-stock{display:none}
+      .grid,.detail{grid-template-columns:1fr}
+      .toolbar select{width:100%}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#">
+      <svg viewBox="0 0 40 40" fill="none">
+        <rect x="1" y="1" width="38" height="38" rx="10" fill="#1b1f26" stroke="#ffb400" stroke-width="1.5"/>
+        <path d="M12 9h16M12 31h16M14 13l12 3-12 3 12 3-12 3 12 3" stroke="#ffb400" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <b>Suspension<span>Pro</span></b>
+    </a>
+    <div class="api-pill"><span class="dot" id="apiDot"></span><span id="apiText">Conectando…</span><a href="/docs" target="_blank">API docs ↗</a></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <div>
+      <span class="eyebrow">Inventario · CRUD</span>
+      <h1>Repuestos de <em>suspensión</em><br>bajo control</h1>
+      <p>Administra amortiguadores, espirales, bujes y rótulas: agrega, consulta, edita y elimina repuestos con su marca, vehículo compatible, precio y stock.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="abrirFormulario()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Agregar repuesto
+        </button>
+        <a class="btn" href="#inventario">Ver inventario</a>
+      </div>
+    </div>
+    <div class="hero-art">
+      <!-- Ilustración propia de un amortiguador con espiral -->
+      <svg viewBox="0 0 300 340" fill="none">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb400"/><stop offset="1" stop-color="#ff7a00"/></linearGradient>
+          <linearGradient id="g2" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2a2f38"/><stop offset=".5" stop-color="#4a525f"/><stop offset="1" stop-color="#2a2f38"/></linearGradient>
+        </defs>
+        <circle cx="150" cy="170" r="140" fill="#ffb400" opacity=".04"/>
+        <rect x="128" y="20" width="44" height="22" rx="11" stroke="#8a93a3" stroke-width="5"/>
+        <rect x="142" y="42" width="16" height="90" fill="url(#g2)"/>
+        <rect x="100" y="70" width="100" height="12" rx="4" fill="#3a404b"/>
+        <rect x="118" y="132" width="64" height="150" rx="10" fill="url(#g2)" stroke="#565e6b"/>
+        <rect x="100" y="262" width="100" height="12" rx="4" fill="#3a404b"/>
+        <g class="spring">
+          <path d="M104 86 C 196 94,196 102,104 110 C 196 118,196 126,104 134 C 196 142,196 150,104 158 C 196 166,196 174,104 182 C 196 190,196 198,104 206 C 196 214,196 222,104 230 C 196 238,196 246,104 254"
+                stroke="url(#g1)" stroke-width="9" stroke-linecap="round"/>
+        </g>
+        <rect x="128" y="290" width="44" height="22" rx="11" stroke="#8a93a3" stroke-width="5"/>
+        <rect x="142" y="274" width="16" height="18" fill="#3a404b"/>
+      </svg>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="stat"><small>Referencias</small><strong id="stTotal">0</strong></div>
+    <div class="stat"><small>Unidades en stock</small><strong id="stUnidades">0</strong></div>
+    <div class="stat"><small>Valor inventario</small><strong id="stValor">$0</strong></div>
+    <div class="stat"><small>Stock bajo (≤3)</small><strong id="stBajo" class="warn">0</strong></div>
+  </section>
+
+  <section id="inventario">
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="buscar" placeholder="Buscar por nombre, marca, vehículo o referencia…">
+      </div>
+      <select id="orden">
+        <option value="reciente">Más recientes</option>
+        <option value="precio-asc">Precio: menor a mayor</option>
+        <option value="precio-desc">Precio: mayor a menor</option>
+        <option value="stock-asc">Stock: menor a mayor</option>
+        <option value="nombre">Nombre A–Z</option>
+      </select>
+      <button class="btn btn-primary" onclick="abrirFormulario()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Nuevo
+      </button>
+    </div>
+    <div class="chips" id="chips"></div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Repuesto</th><th>Tipo</th><th>Posición</th><th>Precio</th><th>Stock</th><th style="text-align:right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<footer>SuspensionPro · FastAPI + MySQL + Nginx en Docker</footer>
+
+<!-- Modal: formulario agregar / editar -->
+<div class="backdrop" id="modalForm">
+  <form class="modal" id="form" novalidate>
+    <div class="modal-head">
+      <h2 id="formTitulo">Nuevo repuesto</h2>
+      <button type="button" class="icon-btn" onclick="cerrar('modalForm')" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body grid">
+      <input type="hidden" id="f-id">
+      <div class="full"><label for="f-nombre">Nombre</label><input class="field" id="f-nombre" placeholder="Amortiguador a gas delantero" required></div>
+      <div><label for="f-tipo">Tipo</label>
+        <select id="f-tipo" required>
+          <option>Amortiguador</option><option>Espiral</option><option>Buje</option><option>Rótula</option>
+          <option>Terminal de dirección</option><option>Base de amortiguador</option><option>Barra estabilizadora</option><option>Kit completo</option>
+        </select>
+      </div>
+      <div><label for="f-posicion">Posición</label>
+        <select id="f-posicion" required>
+          <option>Delantero</option><option>Trasero</option><option>Delantero y trasero</option>
+        </select>
+      </div>
+      <div><label for="f-marca">Marca</label><input class="field" id="f-marca" placeholder="Monroe, KYB, Gabriel…" required></div>
+      <div><label for="f-referencia">Referencia</label><input class="field" id="f-referencia" placeholder="Código del fabricante"></div>
+      <div class="full"><label for="f-vehiculo">Vehículo compatible</label><input class="field" id="f-vehiculo" placeholder="Chevrolet Spark GT 2012-2020" required></div>
+      <div><label for="f-precio">Precio (COP)</label><input class="field" id="f-precio" type="number" min="0" step="100" placeholder="185000" required></div>
+      <div><label for="f-stock">Stock (unidades)</label><input class="field" id="f-stock" type="number" min="0" step="1" placeholder="10" required></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" onclick="cerrar('modalForm')">Cancelar</button>
+      <button type="submit" class="btn btn-primary" id="btnGuardar">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal: ver detalle -->
+<div class="backdrop" id="modalVer">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="verTitulo">Detalle</h2>
+      <button class="icon-btn" onclick="cerrar('modalVer')" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body"><div class="detail" id="verCuerpo"></div></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrar('modalVer')">Cerrar</button>
+      <button class="btn btn-primary" id="verEditar">Editar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: confirmar eliminación -->
+<div class="backdrop" id="modalDel">
+  <div class="modal sm">
+    <div class="confirm-body">
+      <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></div>
+      <h3>¿Eliminar repuesto?</h3>
+      <p id="delTexto"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cerrar('modalDel')">Cancelar</button>
+      <button class="btn btn-danger" id="btnEliminar">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+  const API = '/api/repuestos';
+  let repuestos = [];
+  let filtroTipo = 'Todos';
+  let idEliminar = null;
+
+  const $ = id => document.getElementById(id);
+  const cop = n => new Intl.NumberFormat('es-CO', {style:'currency', currency:'COP', maximumFractionDigits:0}).format(n || 0);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  const ICONOS = {
+    'Amortiguador':'<path d="M9 2h6M12 2v5M8 7h8v13H8zM9 20v2M15 20v2"/>',
+    'Espiral':'<path d="M7 3h10M7 21h10M7 6l10 2-10 2 10 2-10 2 10 2-10 2"/>',
+    'Buje':'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+    'Rótula':'<circle cx="12" cy="8" r="5"/><path d="M12 13v8M8 21h8"/>',
+    'default':'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>'
+  };
+  const icono = t => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONOS[t] || ICONOS.default}</svg>`;
+
+  // ---------- Utilidades UI ----------
+  function toast(msg, error=false){
+    const el = document.createElement('div');
+    el.className = 'toast' + (error ? ' err' : '');
+    el.textContent = msg;
+    $('toasts').appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = '.3s'; }, 2600);
+    setTimeout(() => el.remove(), 3000);
+  }
+  function abrir(id){ $(id).classList.add('open'); }
+  function cerrar(id){ $(id).classList.remove('open'); }
+  document.querySelectorAll('.backdrop').forEach(b =>
+    b.addEventListener('click', e => { if (e.target === b) cerrar(b.id); }));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.querySelectorAll('.backdrop.open').forEach(b => cerrar(b.id));
+  });
+
+  async function pedir(url, opciones={}){
+    const res = await fetch(url, {headers:{'Content-Type':'application/json'}, ...opciones});
+    if (!res.ok){
+      let detalle = `Error ${res.status}`;
+      try { const j = await res.json(); detalle = typeof j.detail === 'string' ? j.detail : 'Revisa los datos del formulario'; } catch {}
+      throw new Error(detalle);
+    }
+    return res.status === 204 ? null : res.json();
+  }
+
+  // ---------- VER (listar) ----------
+  async function cargar(){
+    $('tabla').innerHTML = Array(4).fill('<tr class="skeleton">' + '<td><div></div></td>'.repeat(6) + '</tr>').join('');
+    try{
+      repuestos = await pedir(API);
+      $('apiDot').className = 'dot on'; $('apiText').textContent = 'API conectada';
+    }catch(e){
+      repuestos = [];
+      $('apiDot').className = 'dot off'; $('apiText').textContent = 'API sin conexión';
+      toast('No se pudo conectar con la API', true);
+    }
+    pintar();
+  }
+
+  function pintar(){
+    // Estadísticas
+    $('stTotal').textContent = repuestos.length;
+    $('stUnidades').textContent = repuestos.reduce((a, r) => a + r.stock, 0);
+    $('stValor').textContent = cop(repuestos.reduce((a, r) => a + r.precio * r.stock, 0));
+    $('stBajo').textContent = repuestos.filter(r => r.stock <= 3).length;
+
+    // Chips de tipo
+    const tipos = ['Todos', ...new Set(repuestos.map(r => r.tipo))];
+    if (!tipos.includes(filtroTipo)) filtroTipo = 'Todos';
+    $('chips').innerHTML = tipos.map(t =>
+      `<button class="chip ${t === filtroTipo ? 'active' : ''}" data-tipo="${esc(t)}">${esc(t)}</button>`).join('');
+
+    // Filtro + búsqueda + orden
+    const q = $('buscar').value.trim().toLowerCase();
+    let lista = repuestos.filter(r =>
+      (filtroTipo === 'Todos' || r.tipo === filtroTipo) &&
+      (!q || [r.nombre, r.marca, r.vehiculo, r.referencia].some(v => (v || '').toLowerCase().includes(q))));
+    const orden = $('orden').value;
+    const sorters = {
+      'precio-asc': (a,b) => a.precio - b.precio,
+      'precio-desc': (a,b) => b.precio - a.precio,
+      'stock-asc': (a,b) => a.stock - b.stock,
+      'nombre': (a,b) => a.nombre.localeCompare(b.nombre),
+      'reciente': (a,b) => b.id - a.id
+    };
+    lista.sort(sorters[orden]);
+
+    if (!lista.length){
+      $('tabla').innerHTML = `<tr><td colspan="6"><div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 3h10M7 21h10M7 6l10 2-10 2 10 2-10 2 10 2-10 2"/></svg>
+        <h3>${repuestos.length ? 'Sin resultados' : 'Inventario vacío'}</h3>
+        <p>${repuestos.length ? 'Prueba con otra búsqueda o filtro.' : 'Agrega tu primer repuesto con el botón “Nuevo”.'}</p>
+      </div></td></tr>`;
+      return;
+    }
+
+    $('tabla').innerHTML = lista.map((r, i) => {
+      const est = r.stock === 0 ? ['s-out','Agotado'] : r.stock <= 3 ? ['s-low', `${r.stock} uds`] : ['s-ok', `${r.stock} uds`];
+      return `<tr style="animation-delay:${i * 30}ms">
+        <td><div class="prod"><div class="prod-icon">${icono(r.tipo)}</div>
+          <div><b>${esc(r.nombre)}</b><small>${esc(r.marca)}${r.referencia ? ' · ' + esc(r.referencia) : ''} · ${esc(r.vehiculo)}</small></div></div></td>
+        <td class="c-tipo"><span class="tag">${esc(r.tipo)}</span></td>
+        <td class="c-pos"><span class="pos">${esc(r.posicion)}</span></td>
+        <td><span class="price">${cop(r.precio)}</span></td>
+        <td class="c-stock"><span class="stock ${est[0]}"><i></i>${est[1]}</span></td>
+        <td><div class="actions">
+          <button class="icon-btn" title="Ver" onclick="ver(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          <button class="icon-btn" title="Editar" onclick="abrirFormulario(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+          <button class="icon-btn del" title="Eliminar" onclick="pedirEliminar(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  $('chips').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    filtroTipo = b.dataset.tipo; pintar();
+  });
+  $('buscar').addEventListener('input', pintar);
+  $('orden').addEventListener('change', pintar);
+
+  // ---------- VER (detalle) ----------
+  async function ver(id){
+    try{
+      const r = await pedir(`${API}/${id}`);
+      $('verTitulo').textContent = r.nombre;
+      const fecha = d => d ? new Date(d + 'Z').toLocaleString('es-CO') : '—';
+      const filas = [
+        ['Tipo', r.tipo], ['Posición', r.posicion], ['Marca', r.marca], ['Referencia', r.referencia || '—'],
+        ['Vehículo', r.vehiculo], ['Precio', cop(r.precio)], ['Stock', `${r.stock} unidades`],
+        ['Valor en inventario', cop(r.precio * r.stock)], ['Creado', fecha(r.creado)], ['Actualizado', fecha(r.actualizado)]
+      ];
+      $('verCuerpo').innerHTML = filas.map(([k, v]) => `<div><small>${k}</small><b>${esc(v)}</b></div>`).join('');
+      $('verEditar').onclick = () => { cerrar('modalVer'); abrirFormulario(id); };
+      abrir('modalVer');
+    }catch(e){ toast(e.message, true); }
+  }
+
+  // ---------- AGREGAR / EDITAR ----------
+  const CAMPOS = ['nombre','tipo','posicion','marca','referencia','vehiculo','precio','stock'];
+
+  function abrirFormulario(id){
+    $('form').reset();
+    $('f-id').value = '';
+    if (id){
+      const r = repuestos.find(x => x.id === id);
+      if (!r) return;
+      $('f-id').value = r.id;
+      CAMPOS.forEach(c => $('f-' + c).value = r[c] ?? '');
+      $('formTitulo').textContent = 'Editar repuesto';
+      $('btnGuardar').textContent = 'Guardar cambios';
+    } else {
+      $('formTitulo').textContent = 'Nuevo repuesto';
+      $('btnGuardar').textContent = 'Agregar';
+    }
+    abrir('modalForm');
+    setTimeout(() => $('f-nombre').focus(), 50);
+  }
+
+  $('form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const datos = Object.fromEntries(CAMPOS.map(c => [c, $('f-' + c).value.trim()]));
+    if (!datos.nombre || !datos.marca || !datos.vehiculo || datos.precio === '' || datos.stock === ''){
+      toast('Completa los campos obligatorios', true); return;
+    }
+    datos.precio = Number(datos.precio);
+    datos.stock = parseInt(datos.stock, 10);
+    datos.referencia = datos.referencia || null;
+
+    const id = $('f-id').value;
+    $('btnGuardar').disabled = true;
+    try{
+      if (id){
+        await pedir(`${API}/${id}`, {method:'PUT', body: JSON.stringify(datos)});
+        toast('Repuesto actualizado');
+      } else {
+        await pedir(API, {method:'POST', body: JSON.stringify(datos)});
+        toast('Repuesto agregado');
+      }
+      cerrar('modalForm');
+      await cargar();
+    }catch(err){ toast(err.message, true); }
+    finally{ $('btnGuardar').disabled = false; }
+  });
+
+  // ---------- ELIMINAR ----------
+  function pedirEliminar(id){
+    const r = repuestos.find(x => x.id === id);
+    idEliminar = id;
+    $('delTexto').innerHTML = `Se eliminará <b>${esc(r?.nombre)}</b> (${esc(r?.marca)}). Esta acción no se puede deshacer.`;
+    abrir('modalDel');
+  }
+  $('btnEliminar').addEventListener('click', async () => {
+    try{
+      await pedir(`${API}/${idEliminar}`, {method:'DELETE'});
+      toast('Repuesto eliminado');
+      cerrar('modalDel');
+      await cargar();
+    }catch(e){ toast(e.message, true); }
+  });
+
+  cargar();
+</script>
+</body>
+</html>
